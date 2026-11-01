@@ -1,11 +1,14 @@
 package ru.ibs.diploma.ui;
 
 import org.springframework.stereotype.Component;
+import ru.ibs.diploma.application.AnalyticsCommandService;
 
-import java.awt.*;
+import java.io.IOException;
 import java.util.Scanner;
 
-/** Главное меню приложения. */
+/**
+ * Главное меню приложения.
+ */
 @Component
 public class MenuController {
     private final LocalizationService messages;
@@ -14,8 +17,10 @@ public class MenuController {
         this.messages = messages;
     }
 
-    /** Показывает меню и обрабатывает выбор пользователя. */
-    public void run() {
+    /**
+     * Показывает меню и обрабатывает выбор пользователя.
+     */
+    public void run(AnalyticsCommandService analytics) {
         try (Scanner scanner = new Scanner(System.in)) {
             boolean running = true;
             while (running) {
@@ -30,14 +35,18 @@ public class MenuController {
                     System.out.println(messages.text("error.command"));
                     continue;
                 }
-
-                switch (command) {
-                    case 0 -> {
-                        System.out.println(messages.text("message.goodbye"));
-                        running = false;
+                try {
+                    switch (command) {
+                        case 0 -> {
+                            System.out.println(messages.text("message.goodbye"));
+                            running = false;
+                        }
+                        case 1 -> System.out.println(analytics.totalPopulation());
+                        case 2, 3, 4, 5, 6 -> System.out.println("To be implemented...");
+                        default -> System.out.println(messages.text("error.command"));
                     }
-                    case 1, 2, 3, 4, 5, 6 -> System.out.println("To be implemented...");
-                    default -> System.out.println(messages.text("error.command"));
+                } catch (IOException ex) {
+                    System.err.println(messages.text("error.load", ex.getMessage()));
                 }
             }
         }
