@@ -13,9 +13,11 @@ import ru.ibs.diploma.exception.CliValidationException;
 @Component
 public class CliApplication implements ApplicationRunner {
     private final ExitCodeHolder exitCode;
+    private final LocalizationService messages;
 
-    public CliApplication(ExitCodeHolder exitCode) {
+    public CliApplication(ExitCodeHolder exitCode, LocalizationService messages) {
         this.exitCode = exitCode;
+        this.messages = messages;
     }
 
     @Override
@@ -23,7 +25,7 @@ public class CliApplication implements ApplicationRunner {
         try {
             CliConfig.parse(arguments.getSourceArgs());
         } catch (CliValidationException exception) {
-            System.err.println(exception.getMessage());
+            System.err.println(messages.text(exception.messageKey(), exception.arguments()));
             exitCode.set(2); // Код 2 - Ошибка аргументов командной строки
         }
     }
