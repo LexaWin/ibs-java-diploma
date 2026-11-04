@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.diploma.application.AnalyticsCommandService;
 import ru.ibs.diploma.application.ExitCodeHolder;
 import ru.ibs.diploma.config.CliConfig;
+import ru.ibs.diploma.datamanagement.ParkingCsvReader;
 import ru.ibs.diploma.datamanagement.PopulationTxtReader;
 import ru.ibs.diploma.exception.CliValidationException;
 
@@ -18,19 +19,22 @@ public class CliApplication implements ApplicationRunner {
     private final LocalizationService messages;
     private final MenuController menu;
     private final PopulationTxtReader populationReader;
+    private final ParkingCsvReader parkingReader;
 
-    public CliApplication(ExitCodeHolder exitCode, LocalizationService messages, MenuController menu, PopulationTxtReader populationReader) {
+    public CliApplication(ExitCodeHolder exitCode, LocalizationService messages, MenuController menu,
+                          PopulationTxtReader populationReader, ParkingCsvReader parkingReader) {
         this.exitCode = exitCode;
         this.messages = messages;
         this.menu = menu;
         this.populationReader = populationReader;
+        this.parkingReader = parkingReader;
     }
 
     @Override
     public void run(ApplicationArguments arguments) {
         try {
             CliConfig config = CliConfig.parse(arguments.getSourceArgs());
-            AnalyticsCommandService analytics = new AnalyticsCommandService(config, populationReader);
+            AnalyticsCommandService analytics = new AnalyticsCommandService(config, populationReader, parkingReader);
             menu.run(analytics);
         } catch (CliValidationException exception) {
             System.err.println(messages.text(exception.messageKey(), exception.arguments()));

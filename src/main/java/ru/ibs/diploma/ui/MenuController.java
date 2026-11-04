@@ -4,6 +4,8 @@ import org.springframework.stereotype.Component;
 import ru.ibs.diploma.application.AnalyticsCommandService;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Scanner;
 
 /**
@@ -15,6 +17,10 @@ public class MenuController {
 
     public MenuController(LocalizationService messages) {
         this.messages = messages;
+    }
+
+    private static void printMap(Map<String, BigDecimal> values) {
+        values.forEach((zip, value) -> System.out.println(zip + " " + value.toPlainString()));
     }
 
     /**
@@ -42,12 +48,15 @@ public class MenuController {
                             running = false;
                         }
                         case 1 -> System.out.println(analytics.totalPopulation());
-                        case 2, 3, 4, 5, 6 -> System.out.println("To be implemented...");
+                        case 2 -> printMap(analytics.finesPerCapita());
+                        case 3, 4, 5, 6 -> System.out.println("To be implemented...");
                         default -> System.out.println(messages.text("error.command"));
                     }
                 } catch (IOException ex) {
                     System.err.println(messages.text("error.load", ex.getMessage()));
                 }
+
+                System.out.println();
             }
         }
     }
