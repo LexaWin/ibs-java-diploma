@@ -1,6 +1,7 @@
 package ru.ibs.diploma.data;
 
 import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * Единая модель парковочного нарушения.
@@ -51,5 +52,19 @@ public final class ParkingViolation {
 
     public String getZipCode() {
         return zipCode;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ParkingViolation p)) return false;
+        return Objects.equals(date, p.date) && Objects.equals(fine, p.fine) && Objects.equals(violation, p.violation)
+                && Objects.equals(plateId, p.plateId) && Objects.equals(state, p.state) && Objects.equals(ticketNumber, p.ticketNumber)
+                && Objects.equals(zipCode, p.zipCode);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(date, fine, violation, plateId, state, ticketNumber, zipCode);
     }
 }
