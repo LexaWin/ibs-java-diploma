@@ -7,34 +7,34 @@ import ru.ibs.diploma.application.AnalyticsCommandService;
 import ru.ibs.diploma.application.ExitCodeHolder;
 import ru.ibs.diploma.config.CliConfig;
 import ru.ibs.diploma.datamanagement.ParkingCsvReader;
+import ru.ibs.diploma.datamanagement.ParkingJsonReader;
 import ru.ibs.diploma.datamanagement.PopulationTxtReader;
 import ru.ibs.diploma.exception.CliValidationException;
 
-/**
- * Координирует проверку параметров запуска и работу консольного меню.
- */
 @Component
 public class CliApplication implements ApplicationRunner {
     private final ExitCodeHolder exitCode;
     private final LocalizationService messages;
     private final MenuController menu;
     private final PopulationTxtReader populationReader;
-    private final ParkingCsvReader parkingReader;
+    private final ParkingCsvReader csvReader;
+    private final ParkingJsonReader jsonReader;
 
     public CliApplication(ExitCodeHolder exitCode, LocalizationService messages, MenuController menu,
-                          PopulationTxtReader populationReader, ParkingCsvReader parkingReader) {
+                          PopulationTxtReader populationReader, ParkingCsvReader csvReader, ParkingJsonReader jsonReader) {
         this.exitCode = exitCode;
         this.messages = messages;
         this.menu = menu;
         this.populationReader = populationReader;
-        this.parkingReader = parkingReader;
+        this.csvReader = csvReader;
+        this.jsonReader = jsonReader;
     }
 
     @Override
     public void run(ApplicationArguments arguments) {
         try {
             CliConfig config = CliConfig.parse(arguments.getSourceArgs());
-            AnalyticsCommandService analytics = new AnalyticsCommandService(config, populationReader, parkingReader);
+            AnalyticsCommandService analytics = new AnalyticsCommandService(config, populationReader, csvReader, jsonReader);
             menu.run(analytics);
         } catch (CliValidationException exception) {
             System.err.println(messages.text(exception.messageKey(), exception.arguments()));

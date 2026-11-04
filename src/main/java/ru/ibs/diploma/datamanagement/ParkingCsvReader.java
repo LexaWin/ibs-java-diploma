@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Читает поля парковочного CSV без заголовка.
+ * Читает поля парковочного CSV без заголовка и преобразует их в модель ParkingViolation.
  */
 @Component
 public class ParkingCsvReader implements ParkingDataReader {

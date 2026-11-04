@@ -14,6 +14,13 @@ public class CliValidationException extends Exception {
                 : Arrays.stream(arguments).map(String::valueOf).toArray(String[]::new);
     }
 
+    /**
+     * Возвращает ключ сообщения локализации.
+     */
     public String messageKey() { return messageKey; }
+
+    /**
+     * Возвращает копию аргументов сообщения.
+     */
     public String[] arguments() { return arguments.clone(); }
 }

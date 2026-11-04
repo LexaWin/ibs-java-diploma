@@ -2,6 +2,7 @@ package ru.ibs.diploma.ui;
 
 import org.springframework.stereotype.Component;
 import ru.ibs.diploma.application.AnalyticsCommandService;
+import ru.ibs.diploma.exception.DataReadException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -52,6 +53,9 @@ public class MenuController {
                         case 3, 4, 5, 6 -> System.out.println("To be implemented...");
                         default -> System.out.println(messages.text("error.command"));
                     }
+                } catch (DataReadException ex) {
+
+                    System.err.println(messages.text(ex.messageKey(), ex.arguments()));
                 } catch (IOException ex) {
                     System.err.println(messages.text("error.load", ex.getMessage()));
                 }

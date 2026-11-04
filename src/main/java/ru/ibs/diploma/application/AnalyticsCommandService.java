@@ -4,6 +4,7 @@ import ru.ibs.diploma.config.CliConfig;
 import ru.ibs.diploma.data.ParkingViolation;
 import ru.ibs.diploma.data.PopulationEntry;
 import ru.ibs.diploma.datamanagement.ParkingCsvReader;
+import ru.ibs.diploma.datamanagement.ParkingJsonReader;
 import ru.ibs.diploma.datamanagement.PopulationTxtReader;
 
 import java.io.IOException;
@@ -20,43 +21,35 @@ import java.util.TreeMap;
 public final class AnalyticsCommandService {
     private final CliConfig config;
     private final PopulationTxtReader populationReader;
-    private final ParkingCsvReader parkingReader;
+    private final ParkingCsvReader csvReader;
+    private final ParkingJsonReader jsonReader;
 
-    public AnalyticsCommandService(CliConfig config, PopulationTxtReader populationReader, ParkingCsvReader parkingReader) {
+    public AnalyticsCommandService(CliConfig config, PopulationTxtReader populationReader,
+                                   ParkingCsvReader csvReader, ParkingJsonReader jsonReader) {
         this.config = config;
         this.populationReader = populationReader;
-        this.parkingReader = parkingReader;
+        this.csvReader = csvReader;
+        this.jsonReader = jsonReader;
     }
 
-    /**
-     * Пункт 1: читает записи и суммирует численность населения.
-     */
     public long totalPopulation() throws IOException {
         return populationReader.read(config.getPopulationFile()).stream()
-                .mapToLong(PopulationEntry::getPopulation)
-                .sum();
+                .mapToLong(PopulationEntry::getPopulation).sum();
     }
 
-    /**
-     * Пункт 2: агрегирует суммы штрафов и население по ZIP-кодам и вычисляет отношение.
-     */
     public Map<String, BigDecimal> finesPerCapita() throws IOException {
-        if (!"csv".equals(config.getParkingFormat())) {
-            throw new IOException("JSON to be implemented...");
-        }
         Map<String, Long> populationByZip = new HashMap<>();
         for (PopulationEntry entry : populationReader.read(config.getPopulationFile())) {
             populationByZip.merge(entry.getZipCode(), entry.getPopulation(), Long::sum);
         }
-
+        List<ParkingViolation> parking = "csv".equals(config.getParkingFormat())
+                ? csvReader.read(config.getParkingFile()) : jsonReader.read(config.getParkingFile());
         Map<String, BigDecimal> finesByZip = new TreeMap<>();
-        List<ParkingViolation> violations = parkingReader.read(config.getParkingFile());
-        for (ParkingViolation row : violations) {
+        for (ParkingViolation row : parking) {
             if ("PA".equals(row.getState()) && row.getZipCode() != null && row.getFine() != null) {
                 finesByZip.merge(row.getZipCode(), row.getFine(), BigDecimal::add);
             }
         }
-
         Map<String, BigDecimal> result = new TreeMap<>();
         finesByZip.forEach((zip, amount) -> {
             Long residents = populationByZip.get(zip);
