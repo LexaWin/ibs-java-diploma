@@ -1,16 +1,9 @@
 package ru.ibs.diploma.application;
 
 import ru.ibs.diploma.config.CliConfig;
-import ru.ibs.diploma.data.LoadedData;
-import ru.ibs.diploma.data.ParkingViolation;
-import ru.ibs.diploma.data.PopulationEntry;
-import ru.ibs.diploma.data.PropertyEntry;
-import ru.ibs.diploma.datamanagement.ParkingCsvReader;
-import ru.ibs.diploma.datamanagement.ParkingJsonReader;
-import ru.ibs.diploma.datamanagement.PopulationTxtReader;
-import ru.ibs.diploma.datamanagement.PropertyCsvReader;
+import ru.ibs.diploma.data.*;
+import ru.ibs.diploma.datamanagement.*;
 import ru.ibs.diploma.processor.AnalyticsService;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -52,5 +45,9 @@ public final class AnalyticsCommandService {
 
     public BigDecimal averageMarketValue(String zip) throws IOException {
         return analytics(List.of(), propertyReader.read(config.getPropertiesFile()), List.of()).averageMarketValue(zip);
+    }
+
+    public BigDecimal averageLivableArea(String zip) throws IOException {
+        return analytics(List.of(), propertyReader.read(config.getPropertiesFile()), List.of()).averageLivableArea(zip);
     }
 }

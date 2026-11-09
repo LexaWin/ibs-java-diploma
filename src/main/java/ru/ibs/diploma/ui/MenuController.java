@@ -24,11 +24,12 @@ public class MenuController {
         values.forEach((zip, value) -> System.out.println(zip + " " + value.toPlainString()));
     }
 
-    private void printProperty(Scanner scanner, AnalyticsCommandService analytics) throws IOException {
+    private void printProperty(Scanner scanner, AnalyticsCommandService analytics, boolean market) throws IOException {
         System.out.print(messages.text("prompt.zip"));
         if (scanner.hasNextLine()) {
             System.out.println(messages.text("data.processing"));
-            System.out.println(analytics.averageMarketValue(scanner.nextLine().trim()).toBigInteger());
+            String zip = scanner.nextLine().trim();
+            System.out.println((market ? analytics.averageMarketValue(zip) : analytics.averageLivableArea(zip)).toBigInteger());
         }
     }
 
@@ -58,8 +59,9 @@ public class MenuController {
                         }
                         case 1 -> System.out.println(analytics.totalPopulation());
                         case 2 -> printMap(analytics.finesPerCapita());
-                        case 3 -> printProperty(scanner, analytics);
-                        case 4, 5, 6 -> System.out.println("To be implemented...");
+                        case 3 -> printProperty(scanner, analytics, true);
+                        case 4 -> printProperty(scanner, analytics, false);
+                        case 5, 6 -> System.out.println("To be implemented...");
                         default -> System.out.println(messages.text("error.command"));
                     }
                 } catch (DataReadException ex) {

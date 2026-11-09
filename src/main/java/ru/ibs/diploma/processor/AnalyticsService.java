@@ -63,4 +63,12 @@ public class AnalyticsService {
         PropertyStats stats = normalized == null ? null : propertiesByZip.get(normalized);
         return stats == null ? BigDecimal.ZERO : stats.averageMarketValue();
     }
+
+    /**
+     * Рассчитывает среднее значение совокупной жилой площади.
+     */
+    public BigDecimal averageLivableArea(String zip) {
+        PropertyStats s = propertiesByZip.get(ZipCode.normalize(zip));
+        return s == null ? BigDecimal.ZERO : s.averageLivableArea();
+    }
 }
