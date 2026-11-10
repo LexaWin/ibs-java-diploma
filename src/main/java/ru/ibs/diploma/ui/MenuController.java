@@ -34,6 +34,14 @@ public class MenuController {
         }
     }
 
+    private void printMarketPerCapita(Scanner scanner, AnalyticsCommandService analytics) throws IOException {
+        System.out.print(messages.text("prompt.zip"));
+        if (scanner.hasNextLine()) {
+            System.out.println(messages.text("data.processing"));
+            System.out.println(analytics.marketValuePerCapita(scanner.nextLine().trim()).toBigInteger());
+        }
+    }
+
     /**
      * Показывает меню и обрабатывает выбор пользователя.
      */
@@ -62,7 +70,8 @@ public class MenuController {
                         case 2 -> printMap(analytics.finesPerCapita());
                         case 3 -> printZipAverage(scanner, analytics, PropertyMetric.MARKET_VALUE);
                         case 4 -> printZipAverage(scanner, analytics, PropertyMetric.LIVABLE_AREA);
-                        case 5, 6 -> System.out.println("To be implemented...");
+                        case 5 -> printMarketPerCapita(scanner, analytics);
+                        case 6 -> System.out.println("To be implemented...");
                         default -> System.out.println(messages.text("error.command"));
                     }
                 } catch (DataReadException ex) {

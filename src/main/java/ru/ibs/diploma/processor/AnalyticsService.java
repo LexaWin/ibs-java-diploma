@@ -64,4 +64,15 @@ public class AnalyticsService {
         PropertyStats s = n == null ? null : propertiesByZip.get(n);
         return s == null ? BigDecimal.ZERO : strategies.get(metric).calculate(s);
     }
+
+    public BigDecimal marketValuePerCapita(String zip) {
+        String n = ZipCode.normalize(zip);
+        if (n == null)
+            return BigDecimal.ZERO;
+        PropertyStats s = propertiesByZip.get(n);
+        Long p = populationByZip.get(n);
+        if (s == null || p == null || p == 0 || s.getMarketValueSum().signum() == 0)
+            return BigDecimal.ZERO;
+        return s.getMarketValueSum().divide(BigDecimal.valueOf(p), 0, RoundingMode.DOWN);
+    }
 }

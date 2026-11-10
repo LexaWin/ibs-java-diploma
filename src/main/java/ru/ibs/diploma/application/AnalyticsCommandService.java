@@ -1,8 +1,14 @@
 package ru.ibs.diploma.application;
 
 import ru.ibs.diploma.config.CliConfig;
-import ru.ibs.diploma.data.*;
-import ru.ibs.diploma.datamanagement.*;
+import ru.ibs.diploma.data.LoadedData;
+import ru.ibs.diploma.data.ParkingViolation;
+import ru.ibs.diploma.data.PopulationEntry;
+import ru.ibs.diploma.data.PropertyEntry;
+import ru.ibs.diploma.datamanagement.ParkingCsvReader;
+import ru.ibs.diploma.datamanagement.ParkingJsonReader;
+import ru.ibs.diploma.datamanagement.PopulationTxtReader;
+import ru.ibs.diploma.datamanagement.PropertyCsvReader;
 import ru.ibs.diploma.processor.AnalyticsService;
 import ru.ibs.diploma.processor.PropertyAverageStrategy;
 import ru.ibs.diploma.processor.PropertyMetric;
@@ -49,10 +55,15 @@ public final class AnalyticsCommandService {
     }
 
     public BigDecimal averageProperty(String zip, PropertyMetric metric) throws IOException {
-        return analytics(List.of(), propertyReader.read(
-                config.getPropertiesFile()),
-                List.of()).averageProperty(zip,
-                metric
-        );
+        return analytics(
+                List.of(),
+                propertyReader.read(config.getPropertiesFile()),
+                List.of()
+        ).averageProperty(zip, metric);
+    }
+
+    public BigDecimal marketValuePerCapita(String zip) throws IOException {
+        return analytics(List.of(), propertyReader.read(config.getPropertiesFile()),
+                populationReader.read(config.getPopulationFile())).marketValuePerCapita(zip);
     }
 }
