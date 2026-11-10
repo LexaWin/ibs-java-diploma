@@ -3,6 +3,7 @@ package ru.ibs.diploma.ui;
 import org.springframework.stereotype.Component;
 import ru.ibs.diploma.application.AnalyticsCommandService;
 import ru.ibs.diploma.exception.DataReadException;
+import ru.ibs.diploma.processor.PropertyMetric;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -24,12 +25,12 @@ public class MenuController {
         values.forEach((zip, value) -> System.out.println(zip + " " + value.toPlainString()));
     }
 
-    private void printProperty(Scanner scanner, AnalyticsCommandService analytics, boolean market) throws IOException {
+    private void printZipAverage(Scanner scanner, AnalyticsCommandService analytics, PropertyMetric metric) throws IOException {
         System.out.print(messages.text("prompt.zip"));
         if (scanner.hasNextLine()) {
             System.out.println(messages.text("data.processing"));
             String zip = scanner.nextLine().trim();
-            System.out.println((market ? analytics.averageMarketValue(zip) : analytics.averageLivableArea(zip)).toBigInteger());
+            System.out.println(analytics.averageProperty(zip, metric).toBigInteger());
         }
     }
 
@@ -59,8 +60,8 @@ public class MenuController {
                         }
                         case 1 -> System.out.println(analytics.totalPopulation());
                         case 2 -> printMap(analytics.finesPerCapita());
-                        case 3 -> printProperty(scanner, analytics, true);
-                        case 4 -> printProperty(scanner, analytics, false);
+                        case 3 -> printZipAverage(scanner, analytics, PropertyMetric.MARKET_VALUE);
+                        case 4 -> printZipAverage(scanner, analytics, PropertyMetric.LIVABLE_AREA);
                         case 5, 6 -> System.out.println("To be implemented...");
                         default -> System.out.println(messages.text("error.command"));
                     }

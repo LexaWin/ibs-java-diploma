@@ -11,6 +11,9 @@ import ru.ibs.diploma.datamanagement.ParkingJsonReader;
 import ru.ibs.diploma.datamanagement.PopulationTxtReader;
 import ru.ibs.diploma.datamanagement.PropertyCsvReader;
 import ru.ibs.diploma.exception.CliValidationException;
+import ru.ibs.diploma.processor.PropertyAverageStrategy;
+
+import java.util.List;
 
 @Component
 public class CliApplication implements ApplicationRunner {
@@ -21,9 +24,10 @@ public class CliApplication implements ApplicationRunner {
     private final ParkingCsvReader csvReader;
     private final ParkingJsonReader jsonReader;
     private final PropertyCsvReader properties;
+    private final List<PropertyAverageStrategy> strategies;
 
     public CliApplication(ExitCodeHolder exitCode, LocalizationService messages, MenuController menu,
-                          PopulationTxtReader populationReader, ParkingCsvReader csvReader, ParkingJsonReader jsonReader, PropertyCsvReader properties) {
+                          PopulationTxtReader populationReader, ParkingCsvReader csvReader, ParkingJsonReader jsonReader, PropertyCsvReader properties, List<PropertyAverageStrategy> strategies) {
         this.exitCode = exitCode;
         this.messages = messages;
         this.menu = menu;
@@ -31,14 +35,16 @@ public class CliApplication implements ApplicationRunner {
         this.csvReader = csvReader;
         this.jsonReader = jsonReader;
         this.properties = properties;
+        this.strategies = List.copyOf(strategies);
     }
 
     @Override
     public void run(ApplicationArguments arguments) {
         try {
             CliConfig config = CliConfig.parse(arguments.getSourceArgs());
-            AnalyticsCommandService analytics
-                    = new AnalyticsCommandService(config, populationReader, csvReader, jsonReader, properties);
+            AnalyticsCommandService analytics = new AnalyticsCommandService(
+                    config, populationReader, csvReader, jsonReader, properties, strategies
+            );
             menu.run(analytics);
         } catch (CliValidationException exception) {
             System.err.println(messages.text(exception.messageKey(), exception.arguments()));

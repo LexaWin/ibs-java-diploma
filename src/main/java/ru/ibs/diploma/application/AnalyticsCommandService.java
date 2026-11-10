@@ -4,6 +4,9 @@ import ru.ibs.diploma.config.CliConfig;
 import ru.ibs.diploma.data.*;
 import ru.ibs.diploma.datamanagement.*;
 import ru.ibs.diploma.processor.AnalyticsService;
+import ru.ibs.diploma.processor.PropertyAverageStrategy;
+import ru.ibs.diploma.processor.PropertyMetric;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,20 +20,22 @@ public final class AnalyticsCommandService {
     private final ParkingCsvReader csvReader;
     private final ParkingJsonReader jsonReader;
     private final PropertyCsvReader propertyReader;
+    private final List<PropertyAverageStrategy> strategies;
 
     public AnalyticsCommandService(CliConfig config, PopulationTxtReader populationReader,
                                    ParkingCsvReader csvReader, ParkingJsonReader jsonReader,
-                                   PropertyCsvReader propertyReader) {
+                                   PropertyCsvReader propertyReader, List<PropertyAverageStrategy> strategies) {
         this.config = config;
         this.populationReader = populationReader;
         this.csvReader = csvReader;
         this.jsonReader = jsonReader;
         this.propertyReader = propertyReader;
+        this.strategies = List.copyOf(strategies);
     }
 
     private AnalyticsService analytics(List<ParkingViolation> parking, List<PropertyEntry> properties,
                                        List<PopulationEntry> population) {
-        return new AnalyticsService(new LoadedData(parking, properties, population));
+        return new AnalyticsService(new LoadedData(parking, properties, population), strategies);
     }
 
     public long totalPopulation() throws IOException {
@@ -43,11 +48,11 @@ public final class AnalyticsCommandService {
         return analytics(parking, List.of(), populationReader.read(config.getPopulationFile())).finesPerCapita();
     }
 
-    public BigDecimal averageMarketValue(String zip) throws IOException {
-        return analytics(List.of(), propertyReader.read(config.getPropertiesFile()), List.of()).averageMarketValue(zip);
-    }
-
-    public BigDecimal averageLivableArea(String zip) throws IOException {
-        return analytics(List.of(), propertyReader.read(config.getPropertiesFile()), List.of()).averageLivableArea(zip);
+    public BigDecimal averageProperty(String zip, PropertyMetric metric) throws IOException {
+        return analytics(List.of(), propertyReader.read(
+                config.getPropertiesFile()),
+                List.of()).averageProperty(zip,
+                metric
+        );
     }
 }

@@ -4,20 +4,22 @@ import ru.ibs.diploma.data.*;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
- * Выполняет агрегацию записей и бизнес-расчёты; reader-ы не вычисляют показатели.
+ * Выполняет агрегацию исходных записей и аналитические расчёты.
  */
 public class AnalyticsService {
     private final Map<String, Long> populationByZip = new HashMap<>();
     private final Map<String, BigDecimal> finesByZip = new HashMap<>();
     private final Map<String, PropertyStats> propertiesByZip = new HashMap<>();
+    private final Map<PropertyMetric, PropertyAverageStrategy> strategies;
 
-    public AnalyticsService(LoadedData data) {
+    public AnalyticsService(LoadedData data, List<PropertyAverageStrategy> strategies) {
+        this.strategies = strategies.stream()
+                .collect(Collectors.toUnmodifiableMap(PropertyAverageStrategy::metric, Function.identity()));
         for (PopulationEntry row : data.getPopulationEntries()) {
             populationByZip.merge(row.getZipCode(), row.getPopulation(), Long::sum);
         }
@@ -28,8 +30,10 @@ public class AnalyticsService {
         }
         for (PropertyEntry row : data.getPropertyEntries()) {
             PropertyStats stats = new PropertyStats(
-                    row.getMarketValue() == null ? BigDecimal.ZERO : row.getMarketValue(), row.getMarketValue() == null ? 0 : 1,
-                    row.getLivableArea() == null ? BigDecimal.ZERO : row.getLivableArea(), row.getLivableArea() == null ? 0 : 1);
+                    row.getMarketValue() == null ? BigDecimal.ZERO : row.getMarketValue(),
+                    row.getMarketValue() == null ? 0 : 1,
+                    row.getLivableArea() == null ? BigDecimal.ZERO : row.getLivableArea(),
+                    row.getLivableArea() == null ? 0 : 1);
             propertiesByZip.merge(row.getZipCode(), stats, PropertyStats::merge);
         }
     }
@@ -55,20 +59,9 @@ public class AnalyticsService {
         return result;
     }
 
-    /**
-     * Рассчитывает среднюю рыночную стоимость объектов жилой недвижимости по ZIP-коду.
-     */
-    public BigDecimal averageMarketValue(String zip) {
-        String normalized = ZipCode.normalize(zip);
-        PropertyStats stats = normalized == null ? null : propertiesByZip.get(normalized);
-        return stats == null ? BigDecimal.ZERO : stats.averageMarketValue();
-    }
-
-    /**
-     * Рассчитывает среднее значение совокупной жилой площади.
-     */
-    public BigDecimal averageLivableArea(String zip) {
-        PropertyStats s = propertiesByZip.get(ZipCode.normalize(zip));
-        return s == null ? BigDecimal.ZERO : s.averageLivableArea();
+    public BigDecimal averageProperty(String zip, PropertyMetric metric) {
+        String n = ZipCode.normalize(zip);
+        PropertyStats s = n == null ? null : propertiesByZip.get(n);
+        return s == null ? BigDecimal.ZERO : strategies.get(metric).calculate(s);
     }
 }
