@@ -28,8 +28,8 @@ public class LocalizationService {
         this.bundle = ResourceBundle.getBundle("i18n.messages", systemLocale, control);
     }
 
-    public String text(String key, String... args) {
+    public String text(String key, Object... args) {
         String pattern = bundle.containsKey(key) ? bundle.getString(key) : key;
-        return new MessageFormat(pattern, locale).format(args == null ? new String[0] : args);
+        return new MessageFormat(pattern, locale).format(args == null ? new Object[0] : args);
     }
 }

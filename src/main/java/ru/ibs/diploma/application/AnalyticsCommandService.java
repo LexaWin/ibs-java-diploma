@@ -1,10 +1,7 @@
 package ru.ibs.diploma.application;
 
 import ru.ibs.diploma.config.CliConfig;
-import ru.ibs.diploma.data.LoadedData;
-import ru.ibs.diploma.data.ParkingViolation;
-import ru.ibs.diploma.data.PopulationEntry;
-import ru.ibs.diploma.data.PropertyEntry;
+import ru.ibs.diploma.data.*;
 import ru.ibs.diploma.datamanagement.ParkingCsvReader;
 import ru.ibs.diploma.datamanagement.ParkingJsonReader;
 import ru.ibs.diploma.datamanagement.PopulationTxtReader;
@@ -48,10 +45,14 @@ public final class AnalyticsCommandService {
         return analytics(List.of(), List.of(), populationReader.read(config.getPopulationFile())).totalPopulation();
     }
 
+    private List<ParkingViolation> parking() throws IOException {
+        return "csv".equals(config.getParkingFormat())
+                ? csvReader.read(config.getParkingFile())
+                : jsonReader.read(config.getParkingFile());
+    }
+
     public java.util.NavigableMap<String, BigDecimal> finesPerCapita() throws IOException {
-        List<ParkingViolation> parking = "csv".equals(config.getParkingFormat())
-                ? csvReader.read(config.getParkingFile()) : jsonReader.read(config.getParkingFile());
-        return analytics(parking, List.of(), populationReader.read(config.getPopulationFile())).finesPerCapita();
+        return analytics(parking(), List.of(), populationReader.read(config.getPopulationFile())).finesPerCapita();
     }
 
     public BigDecimal averageProperty(String zip, PropertyMetric metric) throws IOException {
@@ -65,5 +66,10 @@ public final class AnalyticsCommandService {
     public BigDecimal marketValuePerCapita(String zip) throws IOException {
         return analytics(List.of(), propertyReader.read(config.getPropertiesFile()),
                 populationReader.read(config.getPopulationFile())).marketValuePerCapita(zip);
+    }
+
+    public AdditionalFeatureResult additionalFeature() throws IOException {
+        return analytics(parking(), propertyReader.read(config.getPropertiesFile()),
+                populationReader.read(config.getPopulationFile())).additionalFeature();
     }
 }
