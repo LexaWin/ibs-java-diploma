@@ -9,6 +9,7 @@ import ru.ibs.diploma.datamanagement.PropertyCsvReader;
 import ru.ibs.diploma.processor.AnalyticsService;
 import ru.ibs.diploma.processor.PropertyAverageStrategy;
 import ru.ibs.diploma.processor.PropertyMetric;
+import ru.ibs.diploma.processor.ComputationCache;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -24,21 +25,23 @@ public final class AnalyticsCommandService {
     private final ParkingJsonReader jsonReader;
     private final PropertyCsvReader propertyReader;
     private final List<PropertyAverageStrategy> strategies;
+    private final ComputationCache cache;
 
     public AnalyticsCommandService(CliConfig config, PopulationTxtReader populationReader,
                                    ParkingCsvReader csvReader, ParkingJsonReader jsonReader,
-                                   PropertyCsvReader propertyReader, List<PropertyAverageStrategy> strategies) {
+                                   PropertyCsvReader propertyReader, List<PropertyAverageStrategy> strategies, ComputationCache cache) {
         this.config = config;
         this.populationReader = populationReader;
         this.csvReader = csvReader;
         this.jsonReader = jsonReader;
         this.propertyReader = propertyReader;
         this.strategies = List.copyOf(strategies);
+        this.cache = cache;
     }
 
     private AnalyticsService analytics(List<ParkingViolation> parking, List<PropertyEntry> properties,
                                        List<PopulationEntry> population) {
-        return new AnalyticsService(new LoadedData(parking, properties, population), strategies);
+        return new AnalyticsService(new LoadedData(parking, properties, population), strategies, cache);
     }
 
     public long totalPopulation() throws IOException {
