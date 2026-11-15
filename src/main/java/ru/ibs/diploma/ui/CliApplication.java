@@ -6,10 +6,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.diploma.application.AnalyticsCommandService;
 import ru.ibs.diploma.application.ExitCodeHolder;
 import ru.ibs.diploma.config.CliConfig;
-import ru.ibs.diploma.datamanagement.ParkingCsvReader;
-import ru.ibs.diploma.datamanagement.ParkingJsonReader;
-import ru.ibs.diploma.datamanagement.PopulationTxtReader;
-import ru.ibs.diploma.datamanagement.PropertyCsvReader;
+import ru.ibs.diploma.datamanagement.*;
 import ru.ibs.diploma.exception.CliValidationException;
 import ru.ibs.diploma.processor.ComputationCache;
 import ru.ibs.diploma.processor.PropertyAverageStrategy;
@@ -47,12 +44,11 @@ public class CliApplication implements ApplicationRunner {
     public void run(ApplicationArguments arguments) {
         try {
             CliConfig config = CliConfig.parse(arguments.getSourceArgs());
-            AnalyticsCommandService analytics = new AnalyticsCommandService(
-                    config, populationReader, csvReader, jsonReader, properties, strategies, cache
-            );
+            DataLoadingSession session = new DataLoadingSession(config, populationReader, csvReader, jsonReader, properties);
+            AnalyticsCommandService analytics = new AnalyticsCommandService(session, strategies, cache);
             menu.run(analytics);
         } catch (CliValidationException exception) {
-            System.err.println(messages.text(exception.messageKey(), exception.arguments()));
+            System.err.println(messages.text(exception.messageKey(), (Object) exception.arguments()));
             exitCode.set(2); // Код 2 - Ошибка аргументов командной строки
         }
     }

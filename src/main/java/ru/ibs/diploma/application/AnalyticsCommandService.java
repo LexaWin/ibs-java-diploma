@@ -1,78 +1,54 @@
 package ru.ibs.diploma.application;
 
-import ru.ibs.diploma.config.CliConfig;
-import ru.ibs.diploma.data.*;
-import ru.ibs.diploma.datamanagement.ParkingCsvReader;
-import ru.ibs.diploma.datamanagement.ParkingJsonReader;
-import ru.ibs.diploma.datamanagement.PopulationTxtReader;
-import ru.ibs.diploma.datamanagement.PropertyCsvReader;
+import ru.ibs.diploma.data.AdditionalFeatureResult;
+import ru.ibs.diploma.datamanagement.DataLoadingSession;
+import ru.ibs.diploma.datamanagement.DataSource;
 import ru.ibs.diploma.processor.AnalyticsService;
+import ru.ibs.diploma.processor.ComputationCache;
 import ru.ibs.diploma.processor.PropertyAverageStrategy;
 import ru.ibs.diploma.processor.PropertyMetric;
-import ru.ibs.diploma.processor.ComputationCache;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.NavigableMap;
 
 /**
  * Загружает необходимые записи и делегирует расчёты аналитическому сервису.
  */
 public final class AnalyticsCommandService {
-    private final CliConfig config;
-    private final PopulationTxtReader populationReader;
-    private final ParkingCsvReader csvReader;
-    private final ParkingJsonReader jsonReader;
-    private final PropertyCsvReader propertyReader;
+    private final DataLoadingSession session;
     private final List<PropertyAverageStrategy> strategies;
     private final ComputationCache cache;
 
-    public AnalyticsCommandService(CliConfig config, PopulationTxtReader populationReader,
-                                   ParkingCsvReader csvReader, ParkingJsonReader jsonReader,
-                                   PropertyCsvReader propertyReader, List<PropertyAverageStrategy> strategies, ComputationCache cache) {
-        this.config = config;
-        this.populationReader = populationReader;
-        this.csvReader = csvReader;
-        this.jsonReader = jsonReader;
-        this.propertyReader = propertyReader;
+    public AnalyticsCommandService(DataLoadingSession session, List<PropertyAverageStrategy> strategies, ComputationCache cache) {
+        this.session = session;
         this.strategies = List.copyOf(strategies);
         this.cache = cache;
     }
 
-    private AnalyticsService analytics(List<ParkingViolation> parking, List<PropertyEntry> properties,
-                                       List<PopulationEntry> population) {
-        return new AnalyticsService(new LoadedData(parking, properties, population), strategies, cache);
+    private AnalyticsService useAnalyticsCommandService(EnumSet<DataSource> sources) throws IOException {
+        return new AnalyticsService(session.load(sources), strategies, cache);
     }
 
     public long totalPopulation() throws IOException {
-        return analytics(List.of(), List.of(), populationReader.read(config.getPopulationFile())).totalPopulation();
+        return useAnalyticsCommandService(EnumSet.of(DataSource.POPULATION)).totalPopulation();
     }
 
-    private List<ParkingViolation> parking() throws IOException {
-        return "csv".equals(config.getParkingFormat())
-                ? csvReader.read(config.getParkingFile())
-                : jsonReader.read(config.getParkingFile());
-    }
-
-    public java.util.NavigableMap<String, BigDecimal> finesPerCapita() throws IOException {
-        return analytics(parking(), List.of(), populationReader.read(config.getPopulationFile())).finesPerCapita();
+    public NavigableMap<String, BigDecimal> finesPerCapita() throws IOException {
+        return useAnalyticsCommandService(EnumSet.of(DataSource.PARKING, DataSource.POPULATION)).finesPerCapita();
     }
 
     public BigDecimal averageProperty(String zip, PropertyMetric metric) throws IOException {
-        return analytics(
-                List.of(),
-                propertyReader.read(config.getPropertiesFile()),
-                List.of()
-        ).averageProperty(zip, metric);
+        return useAnalyticsCommandService(EnumSet.of(DataSource.PROPERTIES)).averageProperty(zip, metric);
     }
 
     public BigDecimal marketValuePerCapita(String zip) throws IOException {
-        return analytics(List.of(), propertyReader.read(config.getPropertiesFile()),
-                populationReader.read(config.getPopulationFile())).marketValuePerCapita(zip);
+        return useAnalyticsCommandService(EnumSet.of(DataSource.PROPERTIES, DataSource.POPULATION)).marketValuePerCapita(zip);
     }
 
     public AdditionalFeatureResult additionalFeature() throws IOException {
-        return analytics(parking(), propertyReader.read(config.getPropertiesFile()),
-                populationReader.read(config.getPopulationFile())).additionalFeature();
+        return useAnalyticsCommandService(EnumSet.allOf(DataSource.class)).additionalFeature();
     }
 }
