@@ -11,39 +11,33 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Кеширует только те разобранные исходные записи, которые понадобились в текущем запуске.
+ * Кеширует успешно разобранные источники в рамках одного запуска приложения.
  */
 public final class DataLoadingSession {
     private final CliConfig config;
-    private final PopulationTxtReader populationReader;
-    private final ParkingCsvReader csvReader;
-    private final ParkingJsonReader jsonReader;
-    private final PropertyCsvReader properties;
+    private final DataLoadingService loader;
     private final EnumSet<DataSource> loaded = EnumSet.noneOf(DataSource.class);
     private List<ParkingViolation> parkingRows = List.of();
     private List<PopulationEntry> populationRows = List.of();
     private List<PropertyEntry> propertyRows = List.of();
 
-    public DataLoadingSession(CliConfig config, PopulationTxtReader populationReader, ParkingCsvReader csvReader,
-                              ParkingJsonReader jsonReader, PropertyCsvReader properties) {
+    public DataLoadingSession(CliConfig config, DataLoadingService loader) {
         this.config = config;
-        this.populationReader = populationReader;
-        this.csvReader = csvReader;
-        this.jsonReader = jsonReader;
-        this.properties = properties;
+        this.loader = loader;
     }
 
     public synchronized LoadedData load(EnumSet<DataSource> requested) throws IOException {
         if (requested == null) throw new IllegalArgumentException("Не задан набор источников");
-        if (requested.contains(DataSource.POPULATION) && !loaded.contains(DataSource.POPULATION))
-            populationRows = populationReader.read(config.getPopulationFile());
-        if (requested.contains(DataSource.PARKING) && !loaded.contains(DataSource.PARKING))
-            parkingRows = "csv".equals(config.getParkingFormat())
-                    ? csvReader.read(config.getParkingFile())
-                    : jsonReader.read(config.getParkingFile());
-        if (requested.contains(DataSource.PROPERTIES) && !loaded.contains(DataSource.PROPERTIES))
-            propertyRows = properties.read(config.getPropertiesFile());
-        loaded.addAll(requested);
+        EnumSet<DataSource> missing = EnumSet.noneOf(DataSource.class);
+        missing.addAll(requested);
+        missing.removeAll(loaded);
+        if (!missing.isEmpty()) {
+            LoadedData next = loader.load(config, missing);
+            if (missing.contains(DataSource.PARKING)) parkingRows = next.getParkingViolations();
+            if (missing.contains(DataSource.POPULATION)) populationRows = next.getPopulationEntries();
+            if (missing.contains(DataSource.PROPERTIES)) propertyRows = next.getPropertyEntries();
+            loaded.addAll(missing);
+        }
         return new LoadedData(parkingRows, propertyRows, populationRows);
     }
 }

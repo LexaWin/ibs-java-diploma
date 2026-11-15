@@ -18,33 +18,26 @@ public class CliApplication implements ApplicationRunner {
     private final ExitCodeHolder exitCode;
     private final LocalizationService messages;
     private final MenuController menu;
-    private final PopulationTxtReader populationReader;
-    private final ParkingCsvReader csvReader;
-    private final ParkingJsonReader jsonReader;
-    private final PropertyCsvReader properties;
     private final List<PropertyAverageStrategy> strategies;
     private final ComputationCache cache;
+    private final DataLoadingService loader;
 
     public CliApplication(ExitCodeHolder exitCode, LocalizationService messages, MenuController menu,
-                          PopulationTxtReader populationReader, ParkingCsvReader csvReader,
-                          ParkingJsonReader jsonReader, PropertyCsvReader properties,
-                          List<PropertyAverageStrategy> strategies, ComputationCache cache) {
+                          List<PropertyAverageStrategy> strategies, ComputationCache cache,
+                          DataLoadingService loader) {
         this.exitCode = exitCode;
         this.messages = messages;
         this.menu = menu;
-        this.populationReader = populationReader;
-        this.csvReader = csvReader;
-        this.jsonReader = jsonReader;
-        this.properties = properties;
         this.strategies = List.copyOf(strategies);
         this.cache = cache;
+        this.loader = loader;
     }
 
     @Override
     public void run(ApplicationArguments arguments) {
         try {
             CliConfig config = CliConfig.parse(arguments.getSourceArgs());
-            DataLoadingSession session = new DataLoadingSession(config, populationReader, csvReader, jsonReader, properties);
+            DataLoadingSession session = loader.openSession(config);
             AnalyticsCommandService analytics = new AnalyticsCommandService(session, strategies, cache);
             menu.run(analytics);
         } catch (CliValidationException exception) {
