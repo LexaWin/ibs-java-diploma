@@ -1,6 +1,7 @@
 package ru.ibs.diploma.application;
 
 import ru.ibs.diploma.data.AdditionalFeatureResult;
+import ru.ibs.diploma.data.LoadedData;
 import ru.ibs.diploma.datamanagement.DataLoadingSession;
 import ru.ibs.diploma.datamanagement.DataSource;
 import ru.ibs.diploma.processor.AnalyticsService;
@@ -10,9 +11,7 @@ import ru.ibs.diploma.processor.PropertyMetric;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.NavigableMap;
+import java.util.*;
 
 /**
  * Загружает необходимые записи и делегирует расчёты аналитическому сервису.
@@ -21,6 +20,7 @@ public final class AnalyticsCommandService {
     private final DataLoadingSession session;
     private final List<PropertyAverageStrategy> strategies;
     private final ComputationCache cache;
+    private final Map<Set<DataSource>, AnalyticsService> services = new HashMap<>();
 
     public AnalyticsCommandService(DataLoadingSession session, List<PropertyAverageStrategy> strategies, ComputationCache cache) {
         this.session = session;
@@ -29,26 +29,33 @@ public final class AnalyticsCommandService {
     }
 
     private AnalyticsService useAnalyticsCommandService(EnumSet<DataSource> sources) throws IOException {
-        return new AnalyticsService(session.load(sources), strategies, cache);
+        Set<DataSource> key = Set.copyOf(sources);
+        AnalyticsService existing = services.get(key);
+        if (existing != null)
+            return existing;
+        LoadedData data = session.load(sources);
+        AnalyticsService service = new AnalyticsService(data, strategies, cache);
+        services.put(key, service);
+        return service;
     }
 
-    public long totalPopulation() throws IOException {
+    public synchronized long totalPopulation() throws IOException {
         return useAnalyticsCommandService(EnumSet.of(DataSource.POPULATION)).totalPopulation();
     }
 
-    public NavigableMap<String, BigDecimal> finesPerCapita() throws IOException {
+    public synchronized NavigableMap<String, BigDecimal> finesPerCapita() throws IOException {
         return useAnalyticsCommandService(EnumSet.of(DataSource.PARKING, DataSource.POPULATION)).finesPerCapita();
     }
 
-    public BigDecimal averageProperty(String zip, PropertyMetric metric) throws IOException {
+    public synchronized BigDecimal averageProperty(String zip, PropertyMetric metric) throws IOException {
         return useAnalyticsCommandService(EnumSet.of(DataSource.PROPERTIES)).averageProperty(zip, metric);
     }
 
-    public BigDecimal marketValuePerCapita(String zip) throws IOException {
+    public synchronized BigDecimal marketValuePerCapita(String zip) throws IOException {
         return useAnalyticsCommandService(EnumSet.of(DataSource.PROPERTIES, DataSource.POPULATION)).marketValuePerCapita(zip);
     }
 
-    public AdditionalFeatureResult additionalFeature() throws IOException {
+    public synchronized AdditionalFeatureResult additionalFeature() throws IOException {
         return useAnalyticsCommandService(EnumSet.allOf(DataSource.class)).additionalFeature();
     }
 }
