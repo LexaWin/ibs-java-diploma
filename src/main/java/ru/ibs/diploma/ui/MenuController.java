@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.diploma.application.AnalyticsCommandService;
 import ru.ibs.diploma.data.AdditionalFeatureResult;
 import ru.ibs.diploma.exception.DataReadException;
+import ru.ibs.diploma.logging.ApplicationLogger;
 import ru.ibs.diploma.processor.PropertyMetric;
 
 import java.io.IOException;
@@ -20,9 +21,11 @@ import java.util.Scanner;
 @Component
 public class MenuController {
     private final LocalizationService messages;
+    private final ApplicationLogger logger;
 
-    public MenuController(LocalizationService messages) {
+    public MenuController(LocalizationService messages, ApplicationLogger logger) {
         this.messages = messages;
+        this.logger = logger;
     }
 
     private static void printMap(Map<String, BigDecimal> values) {
@@ -34,6 +37,7 @@ public class MenuController {
         if (scanner.hasNextLine()) {
             System.out.println(messages.text("data.processing"));
             String zip = scanner.nextLine().trim();
+            logger.log("ZIP " + zip);
             System.out.println(analytics.averageProperty(zip, metric).toBigInteger());
         }
     }
@@ -41,8 +45,10 @@ public class MenuController {
     private void printMarketPerCapita(Scanner scanner, AnalyticsCommandService analytics) throws IOException {
         System.out.print(messages.text("prompt.zip"));
         if (scanner.hasNextLine()) {
+            String zip = scanner.nextLine().trim();
+            logger.log("ZIP " + zip);
             System.out.println(messages.text("data.processing"));
-            System.out.println(analytics.marketValuePerCapita(scanner.nextLine().trim()).toBigInteger());
+            System.out.println(analytics.marketValuePerCapita(zip).toBigInteger());
         }
     }
 
@@ -153,6 +159,7 @@ public class MenuController {
                 System.out.print(messages.text("prompt.command"));
                 if (!scanner.hasNextLine()) break;
                 String raw = scanner.nextLine().trim();
+                logger.log("COMMAND " + raw);
                 int command;
                 try {
                     command = Integer.parseInt(raw);
@@ -179,9 +186,10 @@ public class MenuController {
                         default -> System.out.println(messages.text("error.command"));
                     }
                 } catch (DataReadException ex) {
-
+                    logger.log("DATA_READING_ERROR " + ex.getMessage());
                     System.err.println(messages.text(ex.messageKey(), ex.arguments()));
                 } catch (IOException ex) {
+                    logger.log("DATA_LOADING_ERROR " + ex.getMessage());
                     System.err.println(messages.text("error.load", ex.getMessage()));
                 }
 

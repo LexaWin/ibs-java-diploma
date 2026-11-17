@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 import ru.ibs.diploma.data.ParkingViolation;
 import ru.ibs.diploma.data.ZipCode;
+import ru.ibs.diploma.logging.ApplicationLogger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,8 +23,16 @@ import java.util.Locale;
  */
 @Component
 public class ParkingCsvReader implements ParkingDataReader {
+    private final ApplicationLogger logger;
+
+    public ParkingCsvReader(ApplicationLogger logger) {
+        this.logger = logger;
+    }
+
     @Override
     public List<ParkingViolation> read(Path file) throws IOException {
+        logger.log("FILE_OPEN parking_csv=" + file);
+
         List<ParkingViolation> result = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.parse(reader)) {

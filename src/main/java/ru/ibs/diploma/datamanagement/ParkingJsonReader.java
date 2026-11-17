@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import ru.ibs.diploma.data.ParkingViolation;
 import ru.ibs.diploma.data.ZipCode;
 import ru.ibs.diploma.exception.DataReadException;
+import ru.ibs.diploma.logging.ApplicationLogger;
 import ru.ibs.diploma.ui.LocalizationService;
 
 import java.io.IOException;
@@ -25,12 +26,20 @@ import java.util.Locale;
  */
 @Component
 public class ParkingJsonReader implements ParkingDataReader {
+    private final ApplicationLogger logger;
+
+    public ParkingJsonReader(ApplicationLogger logger) {
+        this.logger = logger;
+    }
+
     private static String text(Object value) {
         return value == null ? "" : value.toString().trim();
     }
 
     @Override
     public List<ParkingViolation> read(Path file) throws IOException {
+        logger.log("FILE_OPEN parking_json=" + file);
+
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             Object parsed;
             try {

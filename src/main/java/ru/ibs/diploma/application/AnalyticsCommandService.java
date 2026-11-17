@@ -31,8 +31,9 @@ public final class AnalyticsCommandService {
     private AnalyticsService useAnalyticsCommandService(EnumSet<DataSource> sources) throws IOException {
         Set<DataSource> key = Set.copyOf(sources);
         AnalyticsService existing = services.get(key);
-        if (existing != null)
+        if (existing != null) {
             return existing;
+        }
         LoadedData data = session.load(sources);
         AnalyticsService service = new AnalyticsService(data, strategies, cache);
         services.put(key, service);

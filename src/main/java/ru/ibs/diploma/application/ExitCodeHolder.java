@@ -8,8 +8,12 @@ import org.springframework.stereotype.Component;
 public class ExitCodeHolder implements ExitCodeGenerator {
     private int exitCode;
 
-    public void set(int code) { exitCode = code; }
+    public void set(int code) {
+        exitCode = code;
+    }
 
     @Override
-    public int getExitCode() { return exitCode; }
+    public int getExitCode() {
+        return exitCode;
+    }
 }

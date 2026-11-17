@@ -6,6 +6,7 @@ import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
 import ru.ibs.diploma.data.PropertyEntry;
 import ru.ibs.diploma.data.ZipCode;
+import ru.ibs.diploma.logging.ApplicationLogger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,6 +21,12 @@ import java.util.*;
  */
 @Component
 public class PropertyCsvReader {
+    private final ApplicationLogger logger;
+
+    public PropertyCsvReader(ApplicationLogger logger) {
+        this.logger = logger;
+    }
+
     private static String cell(CSVRecord row, int index) {
         return index < row.size() ? row.get(index) : "";
     }
@@ -33,6 +40,8 @@ public class PropertyCsvReader {
     }
 
     public List<PropertyEntry> read(Path file) throws IOException {
+        logger.log("FILE_OPEN properties=" + file);
+
         List<PropertyEntry> result = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true)
