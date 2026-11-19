@@ -1,0 +1,5 @@
+location,zip_code,total_livable_area,market_value
+"Some place, with comma",191047632,1200,100000
+"Another, place",191041,not-a-number,200000
+Plain,19104,1800,invalid
+Negative value and zero area,191046,0,-500

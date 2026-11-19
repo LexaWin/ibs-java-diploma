@@ -32,6 +32,10 @@ public class AnalyticsService {
         this.parkingViolationCountByZip = aggregateParkingViolationCounts(data.getParkingViolations());
     }
 
+    public int cachedResultCount() {
+        return cache.size();
+    }
+
     private static double[] averageRanks(List<BigDecimal> values) {
         Integer[] order = new Integer[values.size()];
         for (int index = 0; index < order.length; index++) order[index] = index;

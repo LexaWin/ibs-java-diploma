@@ -7,12 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ZipCodeTest {
     @Test
-    void normalizesLongZipToFiveDigits() {
+    void usesOnlyTheFirstFiveDigits() {
         assertEquals("19104", ZipCode.normalize("191047632"));
+        assertEquals("19104", ZipCode.normalize("191042"));
     }
 
     @Test
-    void rejectsInvalidPrefix() {
+    void rejectsMissingOrNonNumericPrefix() {
+        assertNull(ZipCode.normalize(""));
         assertNull(ZipCode.normalize("19A04"));
+        assertNull(ZipCode.normalize(null));
     }
 }
