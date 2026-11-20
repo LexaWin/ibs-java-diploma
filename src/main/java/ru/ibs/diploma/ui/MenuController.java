@@ -16,22 +16,43 @@ import java.util.Map;
 import java.util.Scanner;
 
 /**
- * Главное меню приложения.
+ * Реализует интерактивное консольное меню и форматирует результаты аналитики.
+ * <p>Контроллер отвечает за ввод, вывод, журналирование пользовательских команд
+ * и локализацию сообщений; сами расчёты делегируются {@link AnalyticsCommandService}.
  */
 @Component
 public class MenuController {
     private final LocalizationService messages;
     private final ApplicationLogger logger;
 
+    /**
+     * Создаёт контроллер меню с локализацией и журналом событий.
+     *
+     * @param messages сервис локализованных пользовательских сообщений
+     * @param logger журнал пользовательских команд и ошибок
+     */
     public MenuController(LocalizationService messages, ApplicationLogger logger) {
         this.messages = messages;
         this.logger = logger;
     }
 
+    /**
+     * Выводит карту аналитических значений, по одной строке на ZIP-код.
+     *
+     * @param values отображение ZIP-кода и рассчитанного десятичного значения
+     */
     private static void printMap(Map<String, BigDecimal> values) {
         values.forEach((zip, value) -> System.out.println(zip + " " + value.toPlainString()));
     }
 
+    /**
+     * Запрашивает у пользователя ZIP-код и выводит среднее значение выбранной метрики недвижимости.
+     *
+     * @param scanner источник пользовательского ввода
+     * @param analytics фасад аналитических команд
+     * @param metric показатель недвижимости для расчёта
+     * @throws IOException если данные недвижимости не удалось загрузить
+     */
     private void printZipAverage(Scanner scanner, AnalyticsCommandService analytics, PropertyMetric metric) throws IOException {
         System.out.print(messages.text("prompt.zip"));
         if (scanner.hasNextLine()) {
@@ -42,6 +63,13 @@ public class MenuController {
         }
     }
 
+    /**
+     * Запрашивает ZIP-код и выводит совокупную стоимость недвижимости на одного жителя.
+     *
+     * @param scanner источник пользовательского ввода
+     * @param analytics фасад аналитических команд
+     * @throws IOException если данные недвижимости или населения не удалось загрузить
+     */
     private void printMarketPerCapita(Scanner scanner, AnalyticsCommandService analytics) throws IOException {
         System.out.print(messages.text("prompt.zip"));
         if (scanner.hasNextLine()) {
@@ -52,6 +80,12 @@ public class MenuController {
         }
     }
 
+    /**
+     * Выводит таблицу дополнительного анализа с псевдографическими границами,
+     * а затем отображает коэффициент Спирмена либо причину его неопределённости.
+     *
+     * @param result результат сравнения частоты нарушений и стоимости недвижимости
+     */
     private void printAdditionalFeature(AdditionalFeatureResult result) {
         String[] headers = messages.text("feature.header")
                 .split("\\s{2,}", -1);
@@ -136,6 +170,12 @@ public class MenuController {
         }
     }
 
+    /**
+     * Выводит одну строку таблицы с правым выравниванием значений в заданных ширинах.
+     *
+     * @param values текстовые значения ячеек
+     * @param widths ширина соответствующей колонки без учёта внутренних пробелов
+     */
     private static void printTableRow(String[] values, int[] widths) {
         StringBuilder row = new StringBuilder("│");
 
@@ -149,7 +189,10 @@ public class MenuController {
     }
 
     /**
-     * Показывает меню и обрабатывает выбор пользователя.
+     * Запускает цикл меню, разбирает команды пользователя и делегирует расчёты прикладному сервису.
+     * Ошибки чтения данных локализуются и выводятся без аварийного завершения меню.
+     *
+     * @param analytics фасад для выполнения аналитических команд
      */
     public void run(AnalyticsCommandService analytics) {
         try (Scanner scanner = new Scanner(System.in)) {
@@ -198,6 +241,9 @@ public class MenuController {
         }
     }
 
+    /**
+     * Выводит заголовок, все доступные команды и подсказку выхода на выбранном языке.
+     */
     private void printMenu() {
         System.out.println();
         System.out.println("========================================");

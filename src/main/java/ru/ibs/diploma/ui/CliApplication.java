@@ -15,6 +15,12 @@ import ru.ibs.diploma.processor.PropertyAverageStrategy;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Адаптер запуска CLI-сценария в жизненном цикле Spring Boot.
+ * <p>Проверяет аргументы, создаёт сессию загрузки и прикладной сервис, после чего
+ * передаёт управление интерактивному меню. При ошибке CLI-валидации устанавливает
+ * ненулевой код завершения.
+ */
 @Component
 public class CliApplication implements ApplicationRunner {
     private final ExitCodeHolder exitCode;
@@ -25,6 +31,17 @@ public class CliApplication implements ApplicationRunner {
     private final DataLoadingService loader;
     private final ApplicationLogger logger;
 
+    /**
+     * Создаёт CLI-адаптер со всеми зависимостями, необходимыми для интерактивной работы.
+     *
+     * @param exitCode держатель кода завершения процесса
+     * @param messages сервис локализации
+     * @param menu контроллер интерактивного меню
+     * @param strategies зарегистрированные стратегии средних показателей
+     * @param cache кеш аналитических результатов
+     * @param loader сервис чтения исходных файлов
+     * @param logger журнал приложения
+     */
     public CliApplication(ExitCodeHolder exitCode, LocalizationService messages, MenuController menu,
                           List<PropertyAverageStrategy> strategies, ComputationCache cache,
                           DataLoadingService loader, ApplicationLogger logger) {
@@ -37,6 +54,13 @@ public class CliApplication implements ApplicationRunner {
         this.logger = logger;
     }
 
+    /**
+     * Проверяет аргументы, открывает сессию загрузки и запускает меню.
+     * Файлы проверяются на доступность в процессе разбора конфигурации, но читаются
+     * только тогда, когда пользователь выбирает требующую их аналитическую команду.
+     *
+     * @param arguments аргументы, разобранные Spring Boot
+     */
     @Override
     public void run(ApplicationArguments arguments) {
         String[] args = arguments.getSourceArgs();

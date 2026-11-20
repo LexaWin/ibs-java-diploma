@@ -14,16 +14,32 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Читает данные о населении и нормализует отдельные записи индекса.
+ * Читает текстовый файл населения, в котором ZIP-код и численность разделены
+ * пробелами или табуляцией.
+ * <p>Reader возвращает отдельные валидные строки без группировки одинаковых ZIP-кодов;
+ * суммирование выполняется аналитическим слоем.
  */
 @Component
 public class PopulationTxtReader {
     private final ApplicationLogger logger;
 
+    /**
+     * Создаёт reader текстового файла населения.
+     *
+     * @param logger журнал приложения
+     */
     public PopulationTxtReader(ApplicationLogger logger) {
         this.logger = logger;
     }
 
+    /**
+     * Разбирает строки формата {@code ZIP population}, разделённые пробелами или табуляцией.
+     * Неверные строки, ZIP-коды и числовые значения пропускаются.
+     *
+     * @param file путь к текстовому файлу населения
+     * @return неизменяемый список корректных записей без суммирования повторяющихся ZIP-кодов
+     * @throws IOException если файл невозможно открыть или прочитать
+     */
     public List<PopulationEntry> read(Path file) throws IOException {
         logger.log("FILE_OPEN population=" + file);
 

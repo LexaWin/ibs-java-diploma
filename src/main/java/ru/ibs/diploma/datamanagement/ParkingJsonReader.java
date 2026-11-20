@@ -9,7 +9,6 @@ import ru.ibs.diploma.data.ParkingViolation;
 import ru.ibs.diploma.data.ZipCode;
 import ru.ibs.diploma.exception.DataReadException;
 import ru.ibs.diploma.logging.ApplicationLogger;
-import ru.ibs.diploma.ui.LocalizationService;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -22,20 +21,44 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Преобразует JSON-массив нарушений в модель ParkingViolation.
+ * Читает JSON-массив парковочных нарушений и преобразует его элементы
+ * в {@link ParkingViolation}.
+ * <p>Ошибки синтаксиса JSON и неверный тип корневого элемента считаются ошибками
+ * файла; отдельные некорректные записи пропускаются.
  */
 @Component
 public class ParkingJsonReader implements ParkingDataReader {
     private final ApplicationLogger logger;
 
+    /**
+     * Создаёт JSON-reader с журналом открытия исходного файла.
+     *
+     * @param logger журнал приложения
+     */
     public ParkingJsonReader(ApplicationLogger logger) {
         this.logger = logger;
     }
 
+    /**
+     * Преобразует JSON-значение в очищенную строку.
+     *
+     * @param value исходное значение JSON
+     * @return пустая строка для {@code null}, иначе строковое представление без внешних пробелов
+     */
     private static String text(Object value) {
         return value == null ? "" : value.toString().trim();
     }
 
+    /**
+     * Разбирает корневой JSON-массив и преобразует его объектные элементы в нарушения.
+     * Ошибка синтаксиса или корневой тип, отличный от массива, приводит к {@link DataReadException}.
+     * Некорректные отдельные элементы массива пропускаются.
+     *
+     * @param file путь к JSON-файлу
+     * @return неизменяемый список успешно разобранных нарушений
+     * @throws IOException если файл невозможно открыть или прочитать
+     * @throws DataReadException если JSON некорректен или его корневой элемент не является массивом
+     */
     @Override
     public List<ParkingViolation> read(Path file) throws IOException {
         logger.log("FILE_OPEN parking_json=" + file);

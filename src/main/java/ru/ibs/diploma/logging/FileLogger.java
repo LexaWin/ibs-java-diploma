@@ -7,15 +7,29 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Журнал для добавления записей. Каждое событие содержит метку времени в миллисекундах.
+ * Реализация {@link ApplicationLogger}, дописывающая события в UTF-8-файл.
+ * <p>Каждая строка содержит Unix-время в миллисекундах и текст события;
+ * запись синхронизирована, чтобы параллельные загрузчики не смешивали строки.
  */
 public class FileLogger implements ApplicationLogger {
     private final Path file;
 
+    /**
+     * Создаёт журнал, который дописывает записи в указанный файл.
+     *
+     * @param file путь к файлу журнала
+     */
     public FileLogger(Path file) {
         this.file = file;
     }
 
+    /**
+     * Добавляет строку с текущим временем в миллисекундах и очищенным текстом сообщения.
+     * При необходимости родительские каталоги создаются автоматически.
+     *
+     * @param message текст события; переводы строк заменяются пробелами
+     * @throws IllegalStateException если каталог или файл журнала не удалось создать/обновить
+     */
     @Override
     public synchronized void log(String message) {
         try {

@@ -9,10 +9,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Выполняет агрегацию исходных записей и аналитические расчёты.
+ * Выполняет агрегацию разобранных записей и расчёт аналитических показателей.
+ * <p>Сервис строит индексы по ZIP-кодам при создании, применяет стратегии
+ * расчёта средних значений недвижимости и использует {@link ComputationCache}
+ * для повторного использования результатов.
  */
 public class AnalyticsService {
+    /** Множитель для представления частоты нарушений на 1 000 жителей. */
     private static final BigDecimal THOUSAND = BigDecimal.valueOf(1_000);
+    /** Масштаб промежуточной точности десятичных показателей дополнительного анализа. */
     private static final int CALCULATION_SCALE = 12;
 
     private final Map<String, Long> populationByZip;
@@ -22,6 +27,13 @@ public class AnalyticsService {
     private final Map<PropertyMetric, PropertyAverageStrategy> strategies;
     private final ComputationCache cache;
 
+    /**
+     * Строит агрегаты по ZIP-кодам для полученного снимка и подготавливает стратегии метрик.
+     *
+     * @param data разобранные записи парковки, недвижимости и населения
+     * @param strategies стратегии вычисления средних характеристик недвижимости
+     * @param cache общий кеш результатов
+     */
     public AnalyticsService(LoadedData data, List<PropertyAverageStrategy> strategies, ComputationCache cache) {
         this.strategies = strategies.stream()
                 .collect(Collectors.toUnmodifiableMap(PropertyAverageStrategy::metric, Function.identity()));
@@ -32,10 +44,22 @@ public class AnalyticsService {
         this.parkingViolationCountByZip = aggregateParkingViolationCounts(data.getParkingViolations());
     }
 
+    /**
+     * Возвращает число результатов, находящихся в общем кеше вычислений.
+     *
+     * @return количество сохранённых записей кеша
+     */
     public int cachedResultCount() {
         return cache.size();
     }
 
+    /**
+     * Назначает ранги значениям, используя средний ранг для совпадающих значений.
+     * Порядок рангов соответствует исходному порядку элементов списка.
+     *
+     * @param values значения, которые необходимо ранжировать
+     * @return массив рангов в порядке исходного списка
+     */
     private static double[] averageRanks(List<BigDecimal> values) {
         Integer[] order = new Integer[values.size()];
         for (int index = 0; index < order.length; index++) order[index] = index;
@@ -53,6 +77,12 @@ public class AnalyticsService {
         return ranks;
     }
 
+    /**
+     * Суммирует численность населения из нескольких строк одного ZIP-кода.
+     *
+     * @param entries отдельные записи населения
+     * @return неизменяемая карта ZIP-код → суммарное население
+     */
     private static Map<String, Long> aggregatePopulation(List<PopulationEntry> entries) {
         Map<String, Long> result = new HashMap<>();
         for (PopulationEntry entry : entries) {
@@ -63,6 +93,13 @@ public class AnalyticsService {
         return Map.copyOf(result);
     }
 
+    /**
+     * Собирает суммы и количества валидных значений недвижимости по ZIP-кодам.
+     * Рыночная стоимость и жилая площадь учитываются независимыми счётчиками.
+     *
+     * @param entries разобранные записи объектов недвижимости
+     * @return неизменяемая карта ZIP-код → агрегированная статистика
+     */
     private static Map<String, PropertyStats> aggregateProperties(List<PropertyEntry> entries) {
         Map<String, PropertyStats> result = new HashMap<>();
         for (PropertyEntry entry : entries) {
@@ -76,6 +113,13 @@ public class AnalyticsService {
         return Map.copyOf(result);
     }
 
+    /**
+     * Суммирует денежные штрафы по ZIP-кодам, учитывая только регистрацию PA.
+     * Записи без ZIP-кода или валидной суммы штрафа не участвуют в сумме.
+     *
+     * @param violations все разобранные парковочные нарушения
+     * @return неизменяемая карта ZIP-код → сумма штрафов
+     */
     private static Map<String, BigDecimal> aggregateParkingFines(List<ParkingViolation> violations) {
         Map<String, BigDecimal> result = new HashMap<>();
         for (ParkingViolation violation : violations) {
@@ -88,7 +132,10 @@ public class AnalyticsService {
     }
 
     /**
-     * Считает все зарегистрированные нарушения по ZIP, независимо от штата регистрации автомобиля.
+     * Подсчитывает все зарегистрированные нарушения по ZIP-кодам независимо от штата регистрации.
+     *
+     * @param violations все разобранные парковочные нарушения
+     * @return неизменяемая карта ZIP-код → число нарушений
      */
     private static Map<String, Long> aggregateParkingViolationCounts(List<ParkingViolation> violations) {
         Map<String, Long> result = new HashMap<>();
@@ -100,10 +147,24 @@ public class AnalyticsService {
         return Map.copyOf(result);
     }
 
+    /**
+     * Делегирует нормализацию ZIP-кода общей предметной утилите.
+     *
+     * @param zip исходное значение ZIP-кода
+     * @return пятизначный ZIP-код либо {@code null}
+     */
     private static String normalizeZip(String zip) {
         return ZipCode.normalize(zip);
     }
 
+    /**
+     * Рассчитывает корреляцию Пирсона между средними рангами двух показателей (Спирмен).
+     * Возвращает пустой результат при выборке менее чем из двух точек либо при нулевой
+     * дисперсии хотя бы одного из наборов рангов.
+     *
+     * @param rows показатели по ZIP-кодам, отсортированные по ZIP
+     * @return коэффициент в диапазоне [-1; 1], округлённый до четырёх знаков, либо пустое значение
+     */
     private static Optional<BigDecimal> calculateSpearmanCorrelation(
             NavigableMap<String, AdditionalFeatureResult.ZipMetrics> rows) {
         int size = rows.size();
@@ -133,7 +194,9 @@ public class AnalyticsService {
     }
 
     /**
-     * Суммирует население по всем ZIP-кодам.
+     * Суммирует численность населения по всем ZIP-кодам.
+     *
+     * @return общее население в загруженных данных
      */
     public long totalPopulation() {
         return cache.get(
@@ -147,7 +210,11 @@ public class AnalyticsService {
     }
 
     /**
-     * Рассчитывает сумму штрафов на одного жителя по каждому ZIP-коду.
+     * Делит суммарный объём штрафов штата PA по каждому ZIP-коду на его население.
+     * Результат округляется до четырёх знаков после запятой в сторону нуля;
+     * ZIP-коды без штрафов, населения или с нулевым населением пропускаются.
+     *
+     * @return неизменяемая карта ZIP-код → штрафы на одного жителя
      */
     public NavigableMap<String, BigDecimal> finesPerCapita() {
         return cache.get("parking:fines-per-capita", () -> {
@@ -164,7 +231,12 @@ public class AnalyticsService {
     }
 
     /**
-     * Рассчитывает среднее значение выбранного показателя для ZIP-кода.
+     * Рассчитывает среднее значение выбранного показателя по агрегату ZIP-кода.
+     * Если ZIP некорректен или соответствующих записей нет, возвращается ноль.
+     *
+     * @param zip исходный ZIP-код
+     * @param metric показатель недвижимости для расчёта среднего
+     * @return средняя стоимость или жилая площадь согласно выбранной стратегии
      */
     public BigDecimal averageProperty(String zip, PropertyMetric metric) {
         String normalizedZip = normalizeZip(zip);
@@ -176,7 +248,12 @@ public class AnalyticsService {
     }
 
     /**
-     * Делит сумму рыночных стоимостей недвижимости ZIP-кода на численность его населения.
+     * Делит сумму валидных рыночных стоимостей объектов ZIP-кода на его население.
+     * Результат округляется до целого в сторону нуля; при отсутствии данных или нулевом
+     * населении возвращается ноль.
+     *
+     * @param zip исходный ZIP-код
+     * @return совокупная рыночная стоимость на одного жителя
      */
     public BigDecimal marketValuePerCapita(String zip) {
         String normalizedZip = normalizeZip(zip);
@@ -191,15 +268,22 @@ public class AnalyticsService {
     }
 
     /**
-     * Сопоставляет частоту парковочных нарушений на 1 000 жителей со средней рыночной
-     * стоимостью жилой недвижимости по ZIP-кодам и рассчитывает корреляцию Спирмена.
-     * Учитываются нарушения с известным ZIP независимо от штата регистрации автомобиля.
-     * Для ZIP без записей о нарушениях используется нулевая частота.
+     * Возвращает таблицу частоты нарушений на 1 000 жителей и средней стоимости жилья,
+     * а также коэффициент ранговой корреляции Спирмена по ZIP-кодам.
+     *
+     * @return результат дополнительного анализа; вычисление кешируется
      */
     public AdditionalFeatureResult additionalFeature() {
         return cache.get("feature:violations-market-value-spearman:", this::calculateAdditionalFeature);
     }
 
+    /**
+     * Формирует строки для ZIP-кодов с положительным населением и хотя бы одной валидной
+     * рыночной стоимостью. При отсутствии строк нарушений в таком ZIP используется ноль.
+     * Оба показателя рассчитываются с масштабом {@code CALCULATION_SCALE}.
+     *
+     * @return результат по ZIP-кодам с рассчитанной корреляцией
+     */
     private AdditionalFeatureResult calculateAdditionalFeature() {
         TreeMap<String, AdditionalFeatureResult.ZipMetrics> rows = new TreeMap<>();
 

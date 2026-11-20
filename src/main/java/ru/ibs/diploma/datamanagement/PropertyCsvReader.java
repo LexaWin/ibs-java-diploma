@@ -17,20 +17,41 @@ import java.nio.file.Path;
 import java.util.*;
 
 /**
- * Читает properties.csv, находит обязательные столбцы и преобразует строки в записи недвижимости.
+ * Читает CSV-файл недвижимости, определяя позиции обязательных столбцов по именам.
+ * <p>Порядок столбцов не фиксирован. Некорректные или пустые числовые значения
+ * представлены как {@code null}, а строки без ZIP-кода или обоих показателей
+ * не включаются в результат.
  */
 @Component
 public class PropertyCsvReader {
     private final ApplicationLogger logger;
 
+    /**
+     * Создаёт reader CSV-файла недвижимости.
+     *
+     * @param logger журнал приложения
+     */
     public PropertyCsvReader(ApplicationLogger logger) {
         this.logger = logger;
     }
 
+    /**
+     * Безопасно получает ячейку записи, возвращая пустую строку при отсутствии колонки.
+     *
+     * @param row строка CSV
+     * @param index индекс запрашиваемой колонки
+     * @return содержимое ячейки или пустая строка
+     */
     private static String cell(CSVRecord row, int index) {
         return index < row.size() ? row.get(index) : "";
     }
 
+    /**
+     * Преобразует строку в {@link BigDecimal}; пустые и некорректные значения считаются отсутствующими.
+     *
+     * @param raw исходное содержимое ячейки
+     * @return десятичное значение либо {@code null}
+     */
     private static BigDecimal decimal(String raw) {
         try {
             return raw == null || raw.isBlank() ? null : new BigDecimal(raw.trim());
@@ -39,6 +60,15 @@ public class PropertyCsvReader {
         }
     }
 
+    /**
+     * Читает CSV недвижимости, находя {@code zip_code}, {@code market_value} и
+     * {@code total_livable_area} по именам заголовков независимо от их порядка.
+     * Для каждой строки стоимость и площадь разбираются независимо.
+     *
+     * @param file путь к CSV-файлу недвижимости
+     * @return неизменяемый список записей с ZIP-кодом и хотя бы одним валидным показателем
+     * @throws IOException если файл не читается или отсутствует обязательный заголовок
+     */
     public List<PropertyEntry> read(Path file) throws IOException {
         logger.log("FILE_OPEN properties=" + file);
 

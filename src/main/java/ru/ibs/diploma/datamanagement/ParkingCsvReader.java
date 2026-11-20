@@ -19,16 +19,32 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Читает поля парковочного CSV без заголовка и преобразует их в модель ParkingViolation.
+ * Читает парковочные нарушения из CSV без строки заголовков.
+ * <p>Принимаются строки ровно с семью полями. Некорректные строки или значения
+ * пропускаются; штат регистрации приводится к верхнему регистру, ZIP-код
+ * нормализуется через {@link ZipCode}.
  */
 @Component
 public class ParkingCsvReader implements ParkingDataReader {
     private final ApplicationLogger logger;
 
+    /**
+     * Создаёт reader с журналом для регистрации факта открытия файла.
+     *
+     * @param logger журнал приложения
+     */
     public ParkingCsvReader(ApplicationLogger logger) {
         this.logger = logger;
     }
 
+    /**
+     * Читает CSV без заголовка и преобразует строки из семи колонок в предметные записи.
+     * Строки с неверным количеством полей или некорректной суммой штрафа пропускаются.
+     *
+     * @param file путь к CSV-файлу парковочных нарушений
+     * @return неизменяемый список успешно разобранных записей
+     * @throws IOException если файл невозможно открыть или прочитать
+     */
     @Override
     public List<ParkingViolation> read(Path file) throws IOException {
         logger.log("FILE_OPEN parking_csv=" + file);
