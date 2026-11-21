@@ -70,6 +70,30 @@
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.11.2</version>
+                <configuration>
+                    <source>17</source>
+                    <encoding>UTF-8</encoding>
+                    <charset>UTF-8</charset>
+                    <docencoding>UTF-8</docencoding>
+                    <doclint>none</doclint>
+                    <!-- Решает проблему с русскими буквами и пробелами в путях Windows -->
+                    <additionalJOption>-J-Dfile.encoding=UTF-8</additionalJOption>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>generate-html-and-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>javadoc</goal>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 </project>
